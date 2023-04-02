@@ -1,0 +1,128 @@
+<?php
+/**
+ * Plugin Name: G7 Payments
+ * Description: Plugin que aceita métodos de pagamentos multicaixa, express e levantamento sem cartão.
+ * Version: 1.0.0
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
+class g7Payments extends WC_Payment_Gateway {
+
+    public function __construct() {
+
+        // Define o ID do seu gateway de pagamento
+        $this->id = 'seu_gateway_de_pagamento';
+
+        // Define o nome do seu gateway de pagamento
+        $this->method_title = 'Seu Gateway de Pagamento';
+
+        // Define a descrição do seu gateway de pagamento
+        $this->method_description = 'Gateway de Pagamento Offline';
+
+        // Define a forma de pagamento personalizada
+        $this->has_fields = true;
+
+        // Define o ícone do seu gateway de pagamento
+        $this->icon = apply_filters( 'woocommerce_cheque_icon', '' );
+
+        // Define as configurações do seu gateway de pagamento
+        $this->init_form_fields();
+
+        // Define as configurações do seu gateway de pagamento
+        $this->init_settings();
+
+        // Define as opções de configuração do seu gateway de pagamento
+        $this->title = $this->get_option( 'title' );
+        $this->description = $this->get_option( 'description' );
+
+        // Define as ações que serão executadas quando o gateway de pagamento for selecionado
+        add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
+    }
+
+    /**
+     * Configurações do formulário de pagamento personalizado
+     */
+    public function init_form_fields() {
+
+        $this->form_fields = array(
+            'enabled' => array(
+                'title'   => __( 'Ativar/Desativar', 'woocommerce' ),
+                'type'    => 'checkbox',
+                'label'   => __( 'Ativar Seu Gateway de Pagamento', 'woocommerce' ),
+                'default' => 'yes'
+            ),
+            'title' => array(
+                'title'       => __( 'Título', 'woocommerce' ),
+                'type'        => 'text',
+                'description' => __( 'Título do Método de Pagamento que será exibido aos clientes', 'woocommerce' ),
+                'default'     => __( 'Seu Gateway de Pagamento', 'woocommerce' ),
+                'desc_tip'    => true,
+            ),
+            'description' => array(
+                'title'       => __( 'Descrição', 'woocommerce' ),
+                'type'        => 'textarea',
+                'description' => __( 'Descrição do Método de Pagamento que será exibido aos clientes', 'woocommerce' ),
+                'default' => __( 'Efetue o pagamento através do Seu Gateway de Pagamento', 'woocommerce' ),
+                'desc_tip' => true,
+),
+);
+}
+
+/**
+ * Renderiza o formulário de pagamento personalizado
+ */
+
+public function payment_fields() {
+
+    $multicaixa = '<h3>Multicaixa</h3>';
+    $multicaixa .= '<p>Por favor, efetue a transferência bancária para a conta abaixo:</p>';
+    $multicaixa .= '<p>Nome da PJ responsável pela conta: [NOME DA PJ RESPONSÁVEL PELA CONTA]</p>';
+    $multicaixa .= '<p>Banco: [NOME DO BANCO]</p>';
+    $multicaixa .= '<p>IBAN: [NÚMERO DO IBAN]</p>';
+
+    $express = '<h3>Express</h3>';
+    $express .= '<p>Por favor, efetue a transferência bancária para a conta abaixo:</p>';
+    $express .= '<p>Nome da PJ responsável pela conta: [NOME DA PJ RESPONSÁVEL PELA CONTA]</p>';
+    $express .= '<p>Banco: [NOME DO BANCO]</p>';
+    $express .= '<p>Conta: [NÚMERO DA CONTA]</p>';
+    $express .= '<p>IBAN: [NÚMERO DO IBAN]</p>';
+
+    $levantamento = '<h3>Levantamento sem cartão</h3>';
+    $levantamento .= '<p>Por favor, preencha os campos abaixo:</p>';
+    $levantamento .= '<p>Chave:</p>';
+    $levantamento .= '<input type="text" name="seu_gateway_de_pagamento_chave">';
+    $levantamento .= '<p>Senha:</p>';
+    $levantamento .= '<input type="password" name="seu_gateway_de_pagamento_senha">';
+
+    echo $multicaixa . $express . $levantamento;
+}
+
+/**
+ * Processa o pagamento personalizado
+ */
+public function process_payment( $order_id ) {
+
+    $order = wc_get_order( $order_id );
+
+    // Define o status do pedido como "Aguardando confirmação de pagamento"
+    $order->update_status( 'on-hold', __( 'Aguardando confirmação de pagamento', 'woocommerce' ) );
+
+    // Redireciona o usuário para a página de agradecimento do WooCommerce
+    return array(
+        'result' => 'success',
+        'redirect' => $this->get_return_url( $order )
+    );
+}
+
+}
+
+// Adiciona o método de pagamento personalizado ao WooCommerce
+function g7Payments( $methods ) {
+$methods[] = 'g7Payments';
+return $methods;
+}
+
+add_filter( 'woocommerce_payment_gateways', 'g7Payments' );
